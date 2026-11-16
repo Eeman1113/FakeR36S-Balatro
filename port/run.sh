@@ -8,7 +8,7 @@ G=$D/Balatro_pm
 [ -f "$G" ] || { echo "Balatro: no game file in $D (run balatro-port.sh from FakeR36S-Balatro)"; exit 1; }
 LOG=/home/player/.config/fakers36s/balatro.log
 mkdir -p "$D/saves" "${LOG%/*}"
-[ "$(wc -c < "$LOG" 2>/dev/null || echo 0)" -gt 300000 ] && : > "$LOG"
+[ -f "$LOG" ] && [ "$(wc -c < "$LOG")" -gt 300000 ] && : > "$LOG"
 
 export HOME=/home/player XDG_DATA_HOME=$D/saves XDG_CONFIG_HOME=$D/saves
 export SDL_VIDEODRIVER=kmsdrm LOVE_GRAPHICS_USE_OPENGLES=1
@@ -21,8 +21,19 @@ export BALATRO_PM_BUTTON_MAP_FILE=$D/saves/controller-map.txt
 
 echo "=== balatro start $(date) $(basename "$G")" >> "$LOG"
 doas /usr/local/bin/cpuprofile max 2>/dev/null
+# memory trace every 2 s while it runs (512 MB is tight), and the kernel's word if it gets killed
+(
+    while sleep 2; do
+        pid=$(pidof love) || continue
+        rss=$(sed -n 's/^VmRSS: *//p' /proc/$pid/status 2>/dev/null)
+        echo "mem: avail $(sed -n 's/^MemAvailable: *//p' /proc/meminfo) swapfree $(sed -n 's/^SwapFree: *//p' /proc/meminfo) love $rss"
+    done
+) >> "$LOG" 2>&1 &
+trace=$!
 /usr/bin/fr-padwatch love "$G" >> "$LOG" 2>&1
 rc=$?
+kill $trace 2>/dev/null
+[ $rc = 137 ] && dmesg 2>/dev/null | grep -i -E 'out of memory|oom|killed process' | tail -n 5 >> "$LOG"
 doas /usr/local/bin/cpuprofile normal 2>/dev/null
 echo "=== balatro exit $rc" >> "$LOG"
 exit $rc
