@@ -77,6 +77,23 @@ echo "Patching (your original file is not changed)..."
     BUILD_STAMP="$G/.balatro-build.txt" LAYOUT=small PERFORMANCE=on FONT=nunito \
     PERF_OPTIMIZATIONS=1 DEVICE_ARCH=host bash tools/patchscript )
 
+echo "Adding the FakeR36S shortcuts (Select+R1/L1 save states, Select+B FPS)..."
+python3 - "$G/Balatro_pm" "$HERE/lua/states.lua" <<'PY'
+import sys, zipfile, shutil
+game, module = sys.argv[1:]
+tmp = game + '.tmp'
+with zipfile.ZipFile(game) as z, zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED) as o:
+    for i in z.infolist():
+        data = z.read(i.filename)
+        if i.filename == 'main.lua':
+            if b'fakers36s/states' not in data:
+                data = data.rstrip(b'\n') + b'\nrequire "fakers36s/states"\n'
+        if i.filename != 'fakers36s/states.lua':
+            o.writestr(i, data)
+    o.write(module, 'fakers36s/states.lua')
+shutil.move(tmp, game)
+PY
+
 D=$HOMEDIR/ports/balatro
 mkdir -p "$D/saves" "$D/licenses" "$HOMEDIR/.local/share/applications" "$HOMEDIR/.local/share/icons"
 cp "$G/Balatro_pm" "$D/Balatro_pm"
@@ -94,7 +111,7 @@ cat > "$HOMEDIR/.local/share/applications/balatro.puppy" <<PUP
 NAME=Balatro
 CATEGORY=Ports
 COMMAND=/home/player/ports/balatro/run.sh
-DESCRIPTION=The poker roguelike. Needs FakeR36S-OS with LOVE 11.5. Select+Start quits.
+DESCRIPTION=The poker roguelike. Select+R1 save state, Select+L1 load, Select+B FPS, Select+Start quits.
 ICON=/home/player/.local/share/icons/balatro.png
 PUP
 echo "Done: Balatro is in Ports on the card (needs an OS with LOVE 11.5)."
