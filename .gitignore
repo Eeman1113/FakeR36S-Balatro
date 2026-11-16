@@ -1,0 +1,6 @@
+# game files never go in this repo
+*.love
+Balatro_pm
+*.app
+*.exe
+.DS_Store
