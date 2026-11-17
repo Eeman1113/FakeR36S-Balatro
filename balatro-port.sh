@@ -77,20 +77,24 @@ echo "Patching (your original file is not changed)..."
     BUILD_STAMP="$G/.balatro-build.txt" LAYOUT=small PERFORMANCE=on FONT=nunito \
     PERF_OPTIMIZATIONS=1 DEVICE_ARCH=host bash tools/patchscript )
 
-echo "Adding the FakeR36S shortcuts (Select+R1/L1 save states, Select+B FPS)..."
-python3 - "$G/Balatro_pm" "$HERE/lua/states.lua" <<'PY'
-import sys, zipfile, shutil
-game, module = sys.argv[1:]
+echo "Adding the FakeR36S modules (memory fit for 512 MB, Select+R1/L1 save states, Select+B FPS)..."
+python3 - "$G/Balatro_pm" "$HERE/lua" <<'PY'
+import os, sys, zipfile, shutil
+game, lua = sys.argv[1:]
+mods = ['memory', 'states']                 # memory first: it must wrap start-up before anything loads
 tmp = game + '.tmp'
 with zipfile.ZipFile(game) as z, zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED) as o:
     for i in z.infolist():
         data = z.read(i.filename)
+        if i.filename.startswith('fakers36s/'):
+            continue
         if i.filename == 'main.lua':
-            if b'fakers36s/states' not in data:
-                data = data.rstrip(b'\n') + b'\nrequire "fakers36s/states"\n'
-        if i.filename != 'fakers36s/states.lua':
-            o.writestr(i, data)
-    o.write(module, 'fakers36s/states.lua')
+            lines = [l for l in data.decode('utf-8').split('\n') if not l.startswith('require "fakers36s/')]
+            data = ('\n'.join(lines).rstrip('\n') + '\n' +
+                    ''.join('require "fakers36s/%s"\n' % m for m in mods)).encode('utf-8')
+        o.writestr(i, data)
+    for m in mods:
+        o.write(os.path.join(lua, m + '.lua'), 'fakers36s/%s.lua' % m)
 shutil.move(tmp, game)
 PY
 

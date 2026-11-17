@@ -3,6 +3,7 @@
 Balatro on the fake R36S / GA36-MB handheld (Allwinner A23, 32-bit ARM, Mali-400, 512 MB) under [FakeR36S-OS](https://github.com/Eeman1113/FakeR36S-OS). Balatro is a [LÖVE](https://love2d.org) game, and FakeR36S-OS ships LÖVE 11.5 (LuaJIT, OpenGL ES 2), so the game runs as it is, with [PortMaster](https://portmaster.games)'s handheld patches on top: a layout made for small screens, performance tweaks, controller fixes and a particle leak fix.
 
 - **`balatro-port.sh`** fetches PortMaster's Balatro patches pinned to one commit, runs their own patch script unchanged on a copy of your game on your computer, and puts the result on the card with a menu entry.
+- **`lua/memory.lua`** fits start-up into 512 MB: 1x card art from the first load (the 2x set took about 140 MB before PortMaster's switch to 1x kicked in) and only the font your language needs (all the Chinese, Japanese, Korean and Russian fonts at several sizes pushed it past the RAM and swap, and the kernel killed it).
 - **`lua/states.lua`** adds the handheld shortcuts: save states on Select+R1 / Select+L1 and an FPS counter on Select+B.
 - **`port/run.sh`** is the launcher on the handheld: OpenGL ES 2, 30 fps to start, full CPU while playing, Select+Start quits.
 
